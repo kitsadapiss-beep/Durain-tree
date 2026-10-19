@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Durian Smart Garden - ระบบจัดการและติดตามสถานะงานในสวน</title>
+    <!-- Favicon & App Icons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    
+    <!-- PWA / Mobile Add to Home Screen Support -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Durian Smart">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0F4C81">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Kanit Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300&display=swap" rel="stylesheet">
+    <!-- Tone.js for Sound Effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <!-- Custom Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Application Logic -->
+    <script src="app.js"></script>
+</head>
+<body class="text-soft-textDark antialiased min-h-screen flex flex-col pb-24 md:pb-8">
+
+    <header class="w-full bg-white/90 backdrop-blur-md border-b border-blue-100 px-4 md:px-8 py-4 sticky top-0 z-40 shadow-xs">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            
+            <div class="flex items-center justify-between w-full md:w-auto">
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-2xl bg-white border border-blue-100 flex items-center justify-center overflow-hidden shadow-2xs shrink-0 p-1">
+                        <img src="favicon-32x32.png" alt="Durian Smart Logo" class="w-full h-full object-contain">
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-base md:text-lg leading-tight text-[#06172E] flex items-center gap-1.5">
+                            สวนทุเรียนของฉัน <span class="text-xs bg-[#B3DEF8] text-[#0F4C81] px-2 py-0.5 rounded-full font-bold">Durian Smart</span>
+                        </h1>
+                        <p class="text-xs text-[#58A1D3] font-medium">บันทึกและติดตามสถานะงานสวนทุเรียน (บันทึกอัตโนมัติ)</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2 md:hidden">
+                    <button onclick="playClickSound(); openSheetsSyncModal()" class="soft-btn bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 px-2.5 py-2 font-bold text-xs flex items-center gap-1 shadow-2xs" title="ซิงค์ Google Sheets">
+                        <i class="fa-solid fa-file-excel text-emerald-600"></i>
+                    </button>
+                    <button onclick="playClickSound(); openAddGardenModal()" class="soft-btn bg-[#0F4C81] hover:bg-[#022C50] text-white px-3.5 py-2 font-bold text-xs flex items-center gap-1.5 shadow-md shadow-blue-200">
+                        <i class="fa-solid fa-plus text-xs"></i> เพิ่มสวน
+                    </button>
+                </div>
+            </div>
+            
+            <div class="flex items-center justify-center overflow-hidden flex-1 w-full md:w-auto">
+                <div id="garden-list-container" class="flex items-center justify-start md:justify-center gap-2.5 overflow-x-auto py-1 px-1 w-full select-none no-scrollbar">
+                    <!-- Dynamic Garden Pills Rendered Here -->
+                </div>
+            </div>
+
+            <div class="hidden md:flex items-center gap-2 shrink-0">
+                <button onclick="playClickSound(); openSheetsSyncModal()" class="soft-btn bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 px-3.5 py-2.5 font-bold text-xs flex items-center gap-2 shadow-2xs transition" title="เชื่อมต่อและซิงค์ข้อมูลกับ Google Sheets">
+                    <i class="fa-solid fa-file-excel text-emerald-600 text-sm"></i> <span>ซิงค์ Google Sheets</span>
+                </button>
+                <button onclick="playClickSound(); openAddGardenModal()" class="soft-btn bg-[#0F4C81] hover:bg-[#022C50] text-white px-4 py-2.5 font-bold text-xs flex items-center gap-2 shadow-md shadow-blue-200">
+                    <i class="fa-solid fa-plus text-xs"></i> เพิ่มสวนใหม่ ✨
+                </button>
+            </div>
+
+        </div>
+    </header>
+
+    <main class="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full space-y-6">
+        
+        <div class="soft-card p-4 md:p-5 bg-white border border-blue-100">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 pb-2 border-b border-blue-50">
+                <h3 class="text-xs md:text-sm font-bold text-[#06172E] flex items-center gap-2">
+                    <i class="fa-solid fa-clipboard-list text-[#0F4C81]"></i> สรุปงานที่ค้างอยู่ของแต่ละแปลง
+                </h3>
+                
+                <div class="flex items-center gap-2 text-xs font-semibold text-[#0F4C81] bg-blue-50/50 px-3 py-1.5 rounded-xl border border-blue-100">
+                    <div class="flex items-center gap-1.5">
+                        <i class="fa-regular fa-calendar-days text-[#58A1D3]"></i>
+                        <span id="thai-widget-day" class="font-bold text-[#06172E]">00</span>
+                        <span id="thai-widget-month" class="font-bold text-[#06172E]">---</span>
+                        <span id="thai-widget-year" class="font-bold text-[#06172E]">พ.ศ. ----</span>
+                    </div>
+                    <span class="text-blue-200">|</span>
+                    <div class="flex items-center gap-1.5">
+                        <i class="fa-regular fa-clock text-[#58A1D3]"></i>
+                        <span id="thai-widget-time" class="font-bold text-[#0F4C81]">00:00:00</span>
+                        <span class="text-[10px] text-[#58A1D3]">น.</span>
+                    </div>
+                </div>
+            </div>
+            <div id="all-gardens-pending-summary" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                <!-- Dynamic Garden Pending Summaries -->
+            </div>
+        </div>
+
+        <div id="active-garden-header" class="soft-card p-6 md:p-8 flex flex-wrap justify-between items-center gap-4 bg-gradient-to-br from-white to-[#B3DEF8]/20">
+            <div>
+                <h2 id="garden-title" class="text-xl md:text-2xl font-bold text-[#06172E] flex items-center gap-2.5">
+                    <span>กรุณาเลือกหรือสร้างแปลงทุเรียน</span> <i class="fa-solid fa-seedling text-[#0F4C81]"></i>
+                </h2>
+                <p id="garden-desc" class="text-xs md:text-sm text-[#58A1D3] mt-1 font-medium">รายละเอียดและภาพรวมการจัดการสวนทุเรียนของคุณ</p>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap" id="header-actions">
+                <!-- Header Actions rendered here -->
+            </div>
+        </div>
+
+        <div id="dashboard-content" class="space-y-6 hidden">
+            
+            <!-- Open-Meteo Weather Panel (Real-time & Forecast 1-2 Days) -->
+            <div id="garden-weather-panel" class="soft-card p-4 md:p-5 bg-gradient-to-r from-sky-50/70 via-white to-blue-50/60 border border-blue-100 shadow-xs transition">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3.5 pb-2.5 border-b border-blue-100/60">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-9 h-9 rounded-2xl bg-sky-500/10 text-sky-600 flex items-center justify-center text-base font-bold shrink-0 shadow-2xs">
+                            <i class="fa-solid fa-cloud-sun-rain"></i>
+                        </span>
+                        <div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <h3 class="font-bold text-xs md:text-sm text-[#06172E] flex items-center gap-1.5">
+                                    <span>สภาพอากาศประจำแปลง</span>
+                                    <span class="text-[10px] font-semibold text-sky-600 bg-sky-100/80 px-2 py-0.5 rounded-md">Open-Meteo</span>
+                                </h3>
+                                <span id="weather-location-badge" class="text-[10px] font-bold text-sky-700 bg-sky-50 border border-sky-200 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                                    <i class="fa-solid fa-location-dot text-rose-500 text-[9px]"></i> <span id="weather-coords-text">กำลังโหลดพิกัด...</span>
+                                </span>
+                            </div>
+                            <p class="text-[10px] text-[#58A1D3] mt-0.5">ตรวจเช็กสภาพอากาศเฉพาะจุดแบบ Real-time และพยากรณ์ล่วงหน้า 1-2 วัน</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1.5 self-end sm:self-auto">
+                        <button onclick="playClickSound(); openEditLocationModal()" class="soft-btn bg-white hover:bg-sky-50 text-[#0F4C81] border border-blue-200 text-[11px] px-2.5 py-1.5 font-bold flex items-center gap-1.5 shadow-2xs" title="ตั้งค่าหรือวางลิงก์ Google Maps">
+                            <i class="fa-solid fa-map-location-dot text-sky-500"></i> <span>พิกัด / Google Maps</span>
+                        </button>
+                        <button onclick="playClickSound(); refreshGardenWeather()" class="soft-btn bg-white hover:bg-blue-50 text-gray-600 border border-blue-200 text-[11px] px-2.5 py-1.5 font-bold flex items-center gap-1 shadow-2xs" title="อัปเดตสภาพอากาศล่าสุด">
+                            <i id="weather-refresh-icon" class="fa-solid fa-rotate text-blue-600 text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Weather Cards Grid: Real-time, Tomorrow (1 day), Day after tomorrow (2 days) -->
+                <div id="weather-content-grid" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <!-- Dynamic weather cards rendered by JS -->
+                </div>
+
+                <!-- Durian Agricultural Advice -->
+                <div id="weather-durian-tip" class="mt-3 pt-2.5 border-t border-blue-100/60 flex items-start gap-2 text-[11px] text-[#0F4C81] font-medium bg-blue-50/50 px-3 py-2 rounded-xl">
+                    <i class="fa-solid fa-lightbulb text-amber-500 mt-0.5 shrink-0"></i>
+                    <span id="weather-advice-text">กำลังวิเคราะห์สภาพอากาศเพื่อแนะนำการดูแลทุเรียน...</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-3 md:gap-5">
+                <div class="soft-card bg-rose-50/50 border-rose-100 p-4 md:p-5 flex flex-col md:flex-row items-center gap-3 text-center md:text-left">
+                    <div class="w-12 h-12 rounded-2xl bg-rose-500 text-white flex items-center justify-center text-base md:text-lg font-bold shrink-0 shadow-md shadow-rose-200">
+                        <i class="fa-solid fa-hourglass-start"></i>
+                    </div>
+                    <div>
+                        <p class="text-[11px] md:text-xs font-semibold text-rose-600">ยังไม่ทำ</p>
+                        <h3 id="stat-todo" class="text-base md:text-xl font-bold text-gray-800 mt-0.5">0</h3>
+                    </div>
+                </div>
+
+                <div class="soft-card bg-[#B3DEF8]/30 border-blue-200 p-4 md:p-5 flex flex-col md:flex-row items-center gap-3 text-center md:text-left">
+                    <div class="w-12 h-12 rounded-2xl bg-[#58A1D3] text-white flex items-center justify-center text-base md:text-lg font-bold shrink-0 shadow-md shadow-blue-200">
+                        <i class="fa-solid fa-arrows-spin fa-spin"></i>
+                    </div>
+                    <div>
+                        <p class="text-[11px] md:text-xs font-semibold text-[#0F4C81]">กำลังทำ</p>
+                        <h3 id="stat-doing" class="text-base md:text-xl font-bold text-[#06172E] mt-0.5">0</h3>
+                    </div>
+                </div>
+
+                <div class="soft-card bg-emerald-50/50 border-emerald-100 p-4 md:p-5 flex flex-col md:flex-row items-center gap-3 text-center md:text-left">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center text-base md:text-lg font-bold shrink-0 shadow-md shadow-emerald-200">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                    <div>
+                        <p class="text-[11px] md:text-xs font-semibold text-emerald-600">เสร็จแล้ว</p>
+                        <h3 id="stat-done" class="text-base md:text-xl font-bold text-gray-800 mt-0.5">0</h3>
+                    </div>
+                </div>
+            </div>
+
+            <div class="md:hidden flex bg-white p-1.5 border border-blue-100 rounded-2xl gap-1 text-xs font-bold shadow-sm">
+                <button onclick="switchMobileTab('tasks')" id="mtab-btn-tasks" class="flex-1 py-2.5 rounded-xl text-center transition bg-[#0F4C81] text-white shadow-sm">
+                    <i class="fa-solid fa-list-check mr-1"></i> ขั้นตอน
+                </button>
+                <button onclick="switchMobileTab('items')" id="mtab-btn-items" class="flex-1 py-2.5 rounded-xl text-center transition text-[#58A1D3]">
+                    <i class="fa-solid fa-boxes-packing mr-1"></i> สิ่งของ
+                </button>
+                <button onclick="switchMobileTab('finance')" id="mtab-btn-finance" class="flex-1 py-2.5 rounded-xl text-center transition text-[#58A1D3]">
+                    <i class="fa-solid fa-wallet mr-1"></i> บัญชี
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <div class="lg:col-span-7 space-y-6">
+                    
+                    <div id="panel-tasks" class="soft-card p-6 block">
+                        <div class="flex justify-between items-center mb-5 pb-3 border-b border-blue-50">
+                            <div>
+                                <h3 class="font-bold text-base md:text-lg text-[#06172E] flex items-center gap-2">
+                                    <i class="fa-solid fa-list-check text-[#0F4C81]"></i> ขั้นตอนการทำงานในสวน
+                                </h3>
+                                <p class="text-xs text-[#58A1D3]">บันทึกและติดตามสถานะภารกิจรายวัน</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button onclick="playClickSound(); openTaskHistoryModal()" class="soft-btn bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs px-2.5 py-1.5 font-bold flex items-center gap-1 border border-emerald-200">
+                                    <i class="fa-solid fa-clock-rotate-left"></i> <span class="hidden sm:inline">ประวัติงาน</span>
+                                </button>
+                                <button onclick="playClickSound(); confirmResetTasks()" class="soft-btn bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs px-2.5 py-1.5 font-bold flex items-center gap-1">
+                                    <i class="fa-solid fa-rotate-left"></i> <span class="hidden sm:inline">รีเซ็ต</span>
+                                </button>
+                                <button onclick="playClickSound(); openAddTaskModal()" class="soft-btn bg-[#0F4C81] hover:bg-[#022C50] text-white text-xs px-3 py-1.5 font-bold flex items-center gap-1 shadow-sm shadow-blue-200">
+                                    <i class="fa-solid fa-plus"></i> เพิ่มงาน
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="task-list" class="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+                            <!-- Tasks dynamic -->
+                        </div>
+                    </div>
+
+                    <div id="panel-items" class="soft-card p-6 block">
+                        <div class="mb-4 pb-3 border-b border-blue-50">
+                            <div class="flex justify-between items-center mb-2.5">
+                                <div>
+                                    <h3 class="font-bold text-base md:text-lg text-[#06172E] flex items-center gap-2">
+                                        <i class="fa-solid fa-boxes-packing text-[#58A1D3]"></i> สิ่งที่มีไว้ใช้ในสวน
+                                    </h3>
+                                    <p class="text-xs text-[#58A1D3]">ปุ๋ย ยา และอุปกรณ์การเกษตร</p>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="playClickSound(); confirmResetItems()" class="soft-btn bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs px-2.5 py-1.5 font-bold flex items-center gap-1">
+                                        <i class="fa-solid fa-rotate-left"></i> <span class="hidden sm:inline">รีเซ็ต</span>
+                                    </button>
+                                    <button onclick="playClickSound(); openAddItemModal()" class="soft-btn bg-[#0F4C81] hover:bg-[#022C50] text-white text-xs px-3 py-1.5 font-bold flex items-center gap-1 shadow-sm shadow-blue-200">
+                                        <i class="fa-solid fa-plus"></i> เพิ่มสิ่งของ
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- หมวดหมู่ใต้ชื่อหัวข้อ: ปุ๋ย อุปกรณ์ ท่อ ยา -->
+                            <div class="flex items-center gap-1.5 overflow-x-auto pt-1 pb-0.5 text-xs">
+                                <span class="text-[11px] font-semibold text-[#58A1D3] shrink-0 mr-1">หมวดหมู่:</span>
+                                <button type="button" onclick="playClickSound(); filterItemsByCategory('all')" id="item-filter-all" class="px-2.5 py-1 rounded-xl font-bold bg-[#0F4C81] text-white transition text-[11px] shrink-0">ทั้งหมด</button>
+                                <button type="button" onclick="playClickSound(); filterItemsByCategory('ปุ๋ย')" id="item-filter-ปุ๋ย" class="px-2.5 py-1 rounded-xl font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition text-[11px] shrink-0">🍃 ปุ๋ย</button>
+                                <button type="button" onclick="playClickSound(); filterItemsByCategory('อุปกรณ์')" id="item-filter-อุปกรณ์" class="px-2.5 py-1 rounded-xl font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition text-[11px] shrink-0">🛠️ อุปกรณ์</button>
+                                <button type="button" onclick="playClickSound(); filterItemsByCategory('ท่อ')" id="item-filter-ท่อ" class="px-2.5 py-1 rounded-xl font-semibold bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border border-cyan-200 transition text-[11px] shrink-0">🚰 ท่อ</button>
+                                <button type="button" onclick="playClickSound(); filterItemsByCategory('ยา')" id="item-filter-ยา" class="px-2.5 py-1 rounded-xl font-semibold bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 transition text-[11px] shrink-0">🧪 ยา</button>
+                            </div>
+                        </div>
+
+                        <div id="item-list" class="space-y-2.5 max-h-[280px] overflow-y-auto pr-1">
+                            <!-- Items dynamic -->
+                        </div>
+                    </div>
+
+                </div>
+
+                <div id="panel-finance" class="lg:col-span-5 block">
+                    <div class="soft-card p-6">
+                        <div class="flex justify-between items-center mb-5 pb-3 border-b border-blue-50">
+                            <div>
+                                <h3 class="font-bold text-base md:text-lg text-[#06172E] flex items-center gap-2">
+                                    <i class="fa-solid fa-wallet text-emerald-600"></i> สรุปรายรับ - รายจ่าย
+                                </h3>
+                                <p class="text-xs text-[#58A1D3]">บัญชีการเงินเฉพาะสวนนี้</p>
+                            </div>
+                            <button onclick="playClickSound(); confirmResetFinance()" class="soft-btn bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs px-2.5 py-1.5 font-bold flex items-center gap-1">
+                                <i class="fa-solid fa-rotate-left"></i> รีเซ็ต
+                            </button>
+                        </div>
+
+                        <div class="soft-card-sm bg-gradient-to-r from-[#0F4C81] to-[#022C50] text-white p-5 mb-5 text-center relative overflow-hidden shadow-md shadow-blue-200">
+                            <span class="text-xs text-[#B3DEF8] font-semibold block mb-1">💰 กำไร / ขาดทุน สุทธิ</span>
+                            <div id="net-balance" class="text-xl md:text-2xl font-bold tracking-wide">0.00 ฿</div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3 mb-5">
+                            <div class="soft-card-sm bg-emerald-50/60 p-3.5 border-emerald-100">
+                                <span class="text-[11px] text-emerald-700 font-semibold block mb-0.5"><i class="fa-solid fa-arrow-down-left mr-1"></i> รายรับรวม</span>
+                                <span id="total-income" class="text-xs md:text-sm font-bold text-emerald-800">0.00 ฿</span>
+                            </div>
+                            <div class="soft-card-sm bg-rose-50/60 p-3.5 border-rose-100">
+                                <span class="text-[11px] text-rose-700 font-semibold block mb-0.5"><i class="fa-solid fa-arrow-up-right mr-1"></i> รายจ่ายรวม</span>
+                                <span id="total-expense" class="text-xs md:text-sm font-bold text-rose-800">0.00 ฿</span>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2.5 mb-5">
+                            <button onclick="playClickSound(); openAddFinanceModal('income')" class="flex-1 soft-btn bg-emerald-500 hover:bg-emerald-600 text-white text-xs py-2.5 font-bold flex items-center justify-center gap-1 shadow-sm shadow-emerald-200">
+                                <i class="fa-solid fa-plus-circle"></i> เพิ่มรายรับ
+                            </button>
+                            <button onclick="playClickSound(); openAddFinanceModal('expense')" class="flex-1 soft-btn bg-rose-500 hover:bg-rose-600 text-white text-xs py-2.5 font-bold flex items-center justify-center gap-1 shadow-sm shadow-rose-200">
+                                <i class="fa-solid fa-minus-circle"></i> เพิ่มรายจ่าย
+                            </button>
+                        </div>
+
+                        <div class="border-t border-blue-50 pt-4">
+                            <h4 class="text-xs font-bold text-[#58A1D3] mb-3">📜 ประวัติบันทึกทางการเงิน</h4>
+                            <div id="finance-list" class="space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
+                                <!-- Finance transactions dynamic -->
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <div id="empty-state" class="soft-card p-10 md:p-16 text-center my-auto animate-float">
+            <div class="w-16 h-16 md:w-20 md:h-20 bg-white border border-blue-100 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-sm overflow-hidden p-2">
+                <img src="icon-192.png" alt="Durian Smart Garden Logo" class="w-full h-full object-contain">
+            </div>
+            <h3 class="text-lg md:text-xl font-bold text-[#06172E] mb-2">ยินดีต้อนรับสู่ Durian Smart Garden ✨</h3>
+            <p class="text-xs md:text-sm text-[#58A1D3] max-w-md mx-auto mb-6 font-medium">เริ่มต้นการใช้งานโดยกดเพิ่มแปลงทุเรียนของคุณ (ข้อมูลจะถูกบันทึกอัตโนมัติ)</p>
+            <button onclick="playClickSound(); openAddGardenModal()" class="soft-btn bg-[#0F4C81] hover:bg-[#022C50] text-white px-6 py-3 text-xs md:text-sm font-bold inline-flex items-center gap-2 shadow-md shadow-blue-200">
+                <i class="fa-solid fa-plus"></i> เพิ่มแปลงทุเรียนแรกของคุณ ✨
+            </button>
+        </div>
+
+    </main>
+
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-blue-100 px-4 py-2.5 z-40 flex justify-around items-center shadow-lg">
+        <button onclick="switchMobileTab('tasks')" id="mnav-tasks" class="flex flex-col items-center gap-1 text-[#0F4C81] font-bold">
+            <i class="fa-solid fa-list-check text-base"></i>
+            <span class="text-[10px]">ขั้นตอน</span>
+        </button>
+        <button onclick="switchMobileTab('items')" id="mnav-items" class="flex flex-col items-center gap-1 text-[#58A1D3]">
+            <i class="fa-solid fa-boxes-packing text-base"></i>
+            <span class="text-[10px]">สิ่งของ</span>
+        </button>
+        <button onclick="switchMobileTab('finance')" id="mnav-finance" class="flex flex-col items-center gap-1 text-[#58A1D3]">
+            <i class="fa-solid fa-wallet text-base"></i>
+            <span class="text-[10px]">การเงิน</span>
+        </button>
+    </nav>
+
+    <footer class="hidden md:block py-4 text-center text-xs font-bold text-[#58A1D3] bg-white border-t border-blue-50">
+        <p>✨ Smart Garden Blue Palette UI - วางแผนและจัดการสวนสไตล์โมเดิร์น ✨</p>
+    </footer>
+
+    <!-- ================= MODALS ================= -->
+
+    <div id="modal-add-garden" class="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center z-50 hidden p-4">
+        <div class="soft-card bg-white max-w-md w-full p-6 md:p-8 relative shadow-2xl">
+            <h3 class="text-base md:text-lg font-bold text-[#06172E] mb-4 flex items-center gap-2">
+                ✨ เพิ่มแปลงทุเรียนใหม่
+            </h3>
+            <form onsubmit="handleAddGarden(event)">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-[#0F4C81] mb-1.5">ชื่อแปลงทุเรียน *</label>
+                        <input type="text" id="garden-name-input" required placeholder="เช่น แปลงหมอนทอง 10 ไร่, แปลงทุเรียนสาว" class="w-full border border-blue-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#58A1D3] bg-blue-50/30">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-[#0F4C81] mb-1.5">คำอธิบายเพิ่มเติม</label>
+                        <textarea id="garden-desc-input" rows="2" placeholder="เช่น ทุเรียนหมอนทอง 120 ต้น อายุ 6 ปี" class="w-full border border-blue-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#58A1D3] bg-blue-50/30"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-[#0F4C81] mb-1.5">ลิงก์ Google Maps หรือ พิกัด (ไม่บังคับ)</label>
+                        <input type="text" id="garden-location-input-new" placeholder="เช่น 12.6112, 101.4234 หรือ ลิงก์ Google Maps" class="w-full border border-blue-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#58A1D3] bg-blue-50/30">
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal('modal-add-garden')" class="soft-btn bg-gray-100 hover:bg-gray-200 text-gray-600 px-5 py-2.5 text-xs font-bold">ยกเลิก</button>
+                    <button type="submit" class="soft-btn bg-[#0F4C81] hover:bg-[#022C50] text-white px-5 py-2.5 text-xs font-bold shadow-sm shadow-blue-200">บันทึก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-add-task" class="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center z-50 hidden p-4">
+        <div class="soft-card bg-white max-w-md w-full p-6 md:p-8 relative shadow-2xl">
+            <h3 class="text-base md:text-lg font-bold text-[#06172E] mb-4 flex items-center gap-2">
+                📝 เพิ่มขั้นตอนดูแลทุเรียน
+            </h3>
+            <form onsubmit="handleAddTask(event)">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-[#0F4C81] mb-1.5">ชื่อขั้นตอน/งาน *</label>
+                        <input type="text" id="task-title-input" required placeholder="เช่น โยงกิ่งรับน้ำหนักลูก, ปรับสะสมอาหาร, พ่นยาไรแดง" class="w-full border border-blue-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#58A1D3] bg-blue-50/30">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-[#0F4C81] mb-1.5">วันที่เริ่มงาน *</label>
+                        <input type="date" id="task-start-date-input" required class="w-full border border-blue-200 rounded-2xl px-3 py-3 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-[#58A1D3] bg-blue-50/30">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-[#0F4C81] mb-1.5">สถานะเริ่มต้น</label>
+                        <select id="task-status-input" class="w-full border border-blue-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#58A1D3] bg-blue-50/30">
+                            <option value="todo">🔴 ยังไม่ทำ</option>
+                            <option value="doing">🟡 กำลังทำ</option>
+                            <option value="done">🟢 เสร็จแล้ว</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal('modal-add-task')" class="soft-btn bg-gray-100 hover:bg-gray-200 text-gray-600 px-5 py-2.5 text-xs font-bold">ยกเลิก</button>
+                    <button type="submit" class="soft-btn bg-[#0F4C81] hover:bg-[#022C50] text-white px-5 py-2.5 text-xs font-bold shadow-sm shadow-blue-200">บันทึกงาน</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-task-history" class="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center z-50 hidden p-4">
+        <div class="soft-card bg-white max-w-lg w-full p-6 md:p-8 relative shadow-2xl">
+            <div class="flex justify-between items-center mb-4 pb-2 border-b border-blue-50">
+                <h3 class="text-base md:text-lg font-bold text-[#06172E] flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left text-emerald-600"></i> ประวัติงานที่ทำเสร็จแล้ว (🟢 เสร็จแล้ว)
+                </h3>
+                <button onclick="closeModal('modal-task-history')" class="text-gray-400 hover:text-gray-600 p-1">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+            <div id="task-history-list" class="space-y-2.5 max-h-[320px] overflow-y-auto pr-1">
+                <!-- Completed task history dynamic -->
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button type="button" onclick="closeModal('modal-task-history')" class="soft-btn bg-[#0F4C81] hover:bg-[#022C50] text-white px-5 py-2.5 text-xs font-bold">ปิดหน้าต่าง</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-add-item" class="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center z-50 hidden p-4">
+        <div class="soft-card bg-white max-w-md w-full p-6 md:p-8 relative shadow-2xl">
+            <h3 class="text-base md:text-lg font-bold text-[#06172E] mb-4 flex items-center gap-2">
+                📦 เพิ่มปัจจัยการผลิต/อุปกรณ์ทุเรียน
+            </h3>
+            <form onsubmit="handleAddItem(event)">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-[#0F4C81] mb-1.5">ชื่อสิ่งของ / ยา / ปุ๋ย *</label>
+                        <input type="text" id="item-name-input" required placeholder="เช่น เชือกฟางโยงลูก, ปุ๋ย 8-24-24, ยาป้องกันเพลี้ยไก่แจ้" class="w-full border border-blue-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#58A1D3] bg-blue-50/30">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-[#0F4C81] mb-1.5">หมวดหมู่ *</label>
+                        <select id="item-category-input" required class="w-full border border-blue-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#58A1D3] bg-blue-50/30 font-medium text-[#06172E] cursor-pointer">
+                            <option value="ปุ๋ย">🍃 ปุ๋ย</option>
+                            <option value="อุปกรณ์">🛠️ อุปกรณ์</option>
+                            <option value="ท่อ">🚰 ท่อ</option>
+                            <option value="ยา">🧪 ยา</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-[#0F4C81] mb-1.5">จำนวน/หน่วย *</label>
+                        <input type="text" id="item-qty-input" required placeholder="เช่น 5 กระสอบ, 2 ม้วน" class="w-full border border-blue-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#58A1D3] bg-blue-50/30">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-[#0F4C81] mb-1.5">วันที่ซื้อ *</label>
+                        <input type="date" id="item-purchase-date" required class="w-full border border-blue-200 rounded-2xl px-3 py-3 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-[#58A1D3] bg-blue-50/30">
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal('modal-add-item')" class="soft-btn bg-gray-100 hover:bg-gray-200 text-gray-600 px-5 py-2.5 text-xs font-bold">ยกเลิก</button>
+                    <button type="submit" class="soft-btn bg-[#0F4C81] hover:bg-[#022C50] text-white px-5 py-2.5 text-xs font-bold shadow-sm shadow-blue-200">เพิ่มสิ่งของ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-add-finance" class="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center z-50 hidden p-4">
+        <div class="soft-card bg-white max-w-md w-full p-6 md:p-8 relative shadow-2xl">
+            <h3 id="finance-modal-title" class="text-base md:text-lg font-bold text-[#06172E] mb-4">บันทึกการเงิน</h3>
+            <form onsubmit="handleAddFinance(event)">
+                <input type="hidden" id="finance-type-input">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-[#0F4C81] mb-1.5">รายการ *</label>
+                        <input type="text" id="finance-title-input" required placeholder="เช่น ขายผลผลิต, ซื้อยา" class="w-full border border-blue-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#58A1D3] bg-blue-50/30">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-[#0F4C81] mb-1.5">จำนวน/หน่วย (ถ้ามี)</label>
+                        <input type="text" id="finance-qty-input" placeholder="เช่น 5 กระสอบ, 100 กก., 10 ลูก" class="w-full border border-blue-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#58A1D3] bg-blue-50/30">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-[#0F4C81] mb-1.5">จำนวนเงิน (บาท) *</label>
+                        <input type="number" step="0.01" min="0" id="finance-amount-input" required placeholder="0.00" class="w-full border border-blue-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#58A1D3] bg-blue-50/30">
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal('modal-add-finance')" class="soft-btn bg-gray-100 hover:bg-gray-200 text-gray-600 px-5 py-2.5 text-xs font-bold">ยกเลิก</button>
+                    <button type="submit" id="finance-submit-btn" class="soft-btn text-xs px-5 py-2.5 font-bold text-white shadow-sm">บันทึก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-confirm" class="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center z-50 hidden p-4">
+        <div class="soft-card bg-white max-w-sm w-full p-6 md:p-8 text-center shadow-2xl">
+            <div class="w-14 h-14 bg-rose-50 text-rose-500 rounded-3xl flex items-center justify-center mx-auto text-xl mb-4 shadow-sm">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 id="confirm-title" class="font-bold text-[#06172E] text-base mb-1.5">ยืนยันการทำรายการ</h3>
+            <p id="confirm-message" class="text-xs text-[#58A1D3] mb-6">คุณแน่ใจหรือไม่ที่จะทำรายการนี้?</p>
+            <div class="flex gap-3">
+                <button type="button" onclick="closeModal('modal-confirm')" class="flex-1 soft-btn bg-gray-100 hover:bg-gray-200 text-gray-600 py-2.5 text-xs font-bold">ยกเลิก</button>
+                <button type="button" id="confirm-action-btn" class="flex-1 soft-btn bg-rose-500 hover:bg-rose-600 text-white py-2.5 text-xs font-bold shadow-sm shadow-rose-200">ยืนยัน</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Edit Garden Location / Google Maps Link -->
+    <div id="modal-edit-garden-location" class="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center z-50 hidden p-4">
+        <div class="soft-card bg-white max-w-md w-full p-6 md:p-8 relative shadow-2xl">
+            <h3 class="text-base md:text-lg font-bold text-[#06172E] mb-1.5 flex items-center gap-2">
+                📍 ตั้งค่าพิกัดสวน / ลิงก์ Google Maps
+            </h3>
+            <p class="text-xs text-[#58A1D3] mb-4">กำหนดพิกัดสวนเพื่อดึงข้อมูลสภาพอากาศ Open-Meteo แบบ Real-time และพยากรณ์ล่วงหน้า</p>
+            <form onsubmit="handleSaveGardenLocation(event)">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-[#0F4C81] mb-1.5">ลิงก์ Google Maps หรือ พิกัด (Lat, Long) *</label>
+                        <input type="text" id="garden-location-input" required placeholder="เช่น 12.6112, 101.4234 หรือ วางลิงก์ Google Maps" class="w-full border border-blue-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#58A1D3] bg-blue-50/30">
+                    </div>
+                    <div>
+                        <button type="button" onclick="playClickSound(); useCurrentLocationGPS()" class="w-full soft-btn bg-sky-50 hover:bg-sky-100 text-[#0F4C81] border border-sky-200 py-2.5 text-xs font-bold flex items-center justify-center gap-2 transition">
+                            <i class="fa-solid fa-crosshairs text-sky-600"></i> <span>ดึงพิกัดจากตำแหน่งปัจจุบันของฉัน (GPS)</span>
+                        </button>
+                    </div>
+                    <div class="p-3 bg-amber-50/70 border border-amber-200/80 rounded-2xl text-[11px] text-amber-900 space-y-1">
+                        <div class="font-bold flex items-center gap-1.5 text-amber-800"><i class="fa-solid fa-circle-info text-amber-600"></i> วิธีคัดลอกจาก Google Maps:</div>
+                        <div>1. เปิดแอป <strong>Google Maps</strong> แล้วกดแตะค้างที่ตำแหน่งสวนของคุณ</div>
+                        <div>2. แตะตัวเลขพิกัดที่ปรากฏ (เช่น <code>12.6112, 101.4234</code>) เพื่อคัดลอก</div>
+                        <div>3. นำมาวางในช่องด้านบน หรือวางลิงก์ที่แชร์จาก Google Maps ได้ทันที</div>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal('modal-edit-garden-location')" class="soft-btn bg-gray-100 hover:bg-gray-200 text-gray-600 px-5 py-2.5 text-xs font-bold">ยกเลิก</button>
+                    <button type="submit" class="soft-btn bg-[#0F4C81] hover:bg-[#022C50] text-white px-5 py-2.5 text-xs font-bold shadow-sm shadow-blue-200">บันทึกพิกัด</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Google Sheets Sync -->
+    <div id="modal-sheets-sync" class="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center z-50 hidden p-4">
+        <div class="soft-card bg-white max-w-xl w-full p-6 md:p-8 relative shadow-2xl max-h-[92vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-4 pb-3 border-b border-blue-50">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-lg font-bold shadow-2xs">
+                        <i class="fa-solid fa-file-excel text-emerald-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base md:text-lg font-bold text-[#06172E] flex items-center gap-2">
+                            <span>ซิงค์ข้อมูล Google Sheets</span>
+                            <span id="sheets-connection-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">ยังไม่เชื่อมต่อ</span>
+                        </h3>
+                        <p class="text-xs text-[#58A1D3]">สำรองข้อมูลและดูตารางสวนบน Google Sheets ผ่าน Apps Script</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeModal('modal-sheets-sync')" class="text-gray-400 hover:text-gray-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Web App URL Input -->
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label class="block text-xs font-semibold text-[#0F4C81] mb-1.5 flex items-center justify-between">
+                        <span>🔗 Web App URL จาก Google Apps Script *</span>
+                        <span id="sheets-last-synced" class="text-[10px] text-gray-400 font-normal">ยังไม่มีประวัติการซิงค์</span>
+                    </label>
+                    <div class="flex gap-2">
+                        <input type="url" id="sheets-webapp-url-input" placeholder="https://script.google.com/macros/s/.../exec" class="flex-1 border border-blue-200 rounded-2xl px-4 py-2.5 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-[#58A1D3] bg-blue-50/30">
+                        <button type="button" onclick="playClickSound(); saveSheetsUrl()" class="soft-btn bg-[#0F4C81] hover:bg-[#022C50] text-white px-4 py-2.5 text-xs font-bold shrink-0 shadow-2xs">
+                            บันทึก URL
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Action Buttons: Upload & Download -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <button type="button" id="btn-sync-upload" onclick="playClickSound(); syncUploadToSheets()" class="soft-btn bg-emerald-600 hover:bg-emerald-700 text-white p-3 text-xs font-bold flex items-center justify-center gap-2 shadow-sm shadow-emerald-200 transition">
+                        <i id="icon-sync-upload" class="fa-solid fa-cloud-arrow-up text-sm"></i>
+                        <span>⬆️ ส่งข้อมูลขึ้น Google Sheets</span>
+                    </button>
+                    <button type="button" id="btn-sync-download" onclick="playClickSound(); syncDownloadFromSheets()" class="soft-btn bg-white hover:bg-blue-50 text-[#0F4C81] border border-blue-200 p-3 text-xs font-bold flex items-center justify-center gap-2 shadow-2xs transition">
+                        <i id="icon-sync-download" class="fa-solid fa-cloud-arrow-down text-sm text-sky-600"></i>
+                        <span>⬇️ ดึงข้อมูลกลับมาที่เว็บ</span>
+                    </button>
+                </div>
+                <div id="sheets-sync-status-msg" class="text-xs font-semibold text-center hidden p-2.5 rounded-xl"></div>
+            </div>
+
+            <!-- Guide and Code Section -->
+            <div class="border-t border-blue-50 pt-5 space-y-4">
+                <div class="flex items-center justify-between">
+                    <h4 class="text-xs md:text-sm font-bold text-[#06172E] flex items-center gap-1.5">
+                        <i class="fa-solid fa-code text-[#0F4C81]"></i> โค้ด Apps Script และวิธีติดตั้งใช้งาน
+                    </h4>
+                    <button type="button" onclick="playClickSound(); copyAppsScriptCode()" id="btn-copy-script" class="soft-btn bg-sky-50 hover:bg-sky-100 text-[#0F4C81] border border-sky-200 px-3 py-1.5 text-xs font-bold flex items-center gap-1.5 transition">
+                        <i class="fa-regular fa-copy"></i> <span id="copy-btn-text">คัดลอกโค้ดทั้งหมด</span>
+                    </button>
+                </div>
+
+                <!-- Step-by-Step Instructions -->
+                <div class="bg-blue-50/50 border border-blue-100 rounded-2xl p-4 text-xs text-gray-700 space-y-2 leading-relaxed">
+                    <p class="font-bold text-[#0F4C81] flex items-center gap-1">
+                        <i class="fa-solid fa-list-check"></i> ขั้นตอนนำไปใช้งาน (ทำครั้งเดียว):
+                    </p>
+                    <ol class="list-decimal list-inside space-y-1.5 text-[11px] text-gray-600">
+                        <li>เปิด Google Sheets ใหม่ที่ <a href="https://sheets.new" target="_blank" class="text-blue-600 underline font-semibold">sheets.new <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i></a></li>
+                        <li>ไปที่เมนู <strong>ส่วนขยาย (Extensions)</strong> &gt; เลือก <strong>Apps Script</strong></li>
+                        <li>ลบโค้ดเดิมทั้งหมดใน <code>Code.gs</code> แล้วกดปุ่ม <strong>"คัดลอกโค้ดทั้งหมด"</strong> ด้านบนไปวางแทน</li>
+                        <li>กดปุ่ม <strong>บันทึก 💾 (Ctrl+S)</strong></li>
+                        <li>กดปุ่มสีน้ำเงิน <strong>ทำให้ใช้งานได้ (Deploy)</strong> &gt; เลือก <strong>การทำให้ใช้งานได้รายการใหม่ (New deployment)</strong></li>
+                        <li>คลิกไอคอนฟันเฟือง ⚙️ &gt; เลือก <strong>เว็บแอป (Web app)</strong></li>
+                        <li>ตั้งค่า: กำหนด <em>"ผู้มีสิทธิ์เข้าถึง (Who has access)"</em> เป็น <strong class="text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">ทุกคน (Anyone)</strong> <span class="text-rose-500 font-bold">*จำเป็น</span></li>
+                        <li>กด <strong>ทำให้ใช้งานได้ (Deploy)</strong> แล้วคัดลอก <strong>URL เว็บแอป (Web app URL)</strong> ที่ลงท้ายด้วย <code>/exec</code> มาวางในช่องด้านบน แล้วกดบันทึก</li>
+                    </ol>
+                </div>
+
+                <!-- Collapsible Code Block Preview -->
+                <details class="border border-gray-200 rounded-2xl p-3 bg-gray-50/70 text-xs">
+                    <summary class="font-bold text-gray-600 cursor-pointer select-none flex items-center justify-between">
+                        <span>ดูโค้ด Google Apps Script (Code.gs) ที่นี่</span>
+                        <span class="text-[10px] text-blue-600 font-normal underline">คลิกเพื่อเปิด/ปิด</span>
+                    </summary>
+                    <div class="mt-3 relative">
+                        <pre id="apps-script-code-block" class="bg-gray-900 text-gray-100 p-3.5 rounded-xl text-[10px] font-mono overflow-x-auto max-h-56 leading-relaxed select-all">
+                        </pre>
+                    </div>
+                </details>
+            </div>
+
+            <div class="mt-6 flex justify-end">
+                <button type="button" onclick="closeModal('modal-sheets-sync')" class="soft-btn bg-gray-100 hover:bg-gray-200 text-gray-600 px-5 py-2.5 text-xs font-bold">ปิดหน้าต่าง</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,80 @@
+/* ========================================================
+   Durian Smart Garden - Custom Stylesheet
+   Classic Blue Palette & Interactive Components
+   ======================================================== */
+
+body {
+    font-family: 'Kanit', sans-serif;
+    background-color: #f0f5fc;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.soft-card {
+    background-color: #ffffff;
+    border: 1px solid #e0e7ff;
+    box-shadow: 0 10px 25px -5px rgba(15, 76, 129, 0.06), 0 8px 10px -6px rgba(15, 76, 129, 0.02);
+    border-radius: 24px;
+}
+
+.soft-card-sm {
+    background-color: #ffffff;
+    border: 1px solid #e0e7ff;
+    box-shadow: 0 4px 12px rgba(15, 76, 129, 0.04);
+    border-radius: 18px;
+}
+
+.soft-btn {
+    border-radius: 16px;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(15, 76, 129, 0.08);
+}
+
+.soft-btn:active {
+    transform: scale(0.97);
+}
+
+.soft-badge {
+    border-radius: 12px;
+    font-weight: 600;
+}
+
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #93c5fd;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #3b82f6;
+}
+
+.dragging {
+    opacity: 0.5;
+    transform: scale(0.96);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+@keyframes floatSmooth {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-5px); }
+}
+
+.animate-float {
+    animation: floatSmooth 4s ease-in-out infinite;
+}
