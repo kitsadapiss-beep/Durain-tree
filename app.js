@@ -70,6 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     switchMobileTab(currentMobileTab);
     startThailandClock();
+    updateOnlineStatusUI();
     
     const taskDateInput = document.getElementById('task-start-date-input');
     const itemDateInput = document.getElementById('item-purchase-date');
@@ -1589,7 +1590,55 @@ function openSheetsSyncModal() {
     openModal('modal-sheets-sync');
 }
 
+function updateOnlineStatusUI() {
+    const isOnline = navigator.onLine;
+    const desktopBtn = document.getElementById('connection-status-btn');
+    const mobileBtn = document.getElementById('connection-status-btn-mobile');
+    const buttons = [desktopBtn, mobileBtn].filter(Boolean);
+
+    buttons.forEach(btn => {
+        const dot = btn.querySelector('.status-indicator-dot');
+        const text = btn.querySelector('.status-indicator-text');
+
+        if (isOnline) {
+            btn.className = 'soft-btn bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 px-3.5 py-2.5 font-bold text-xs flex items-center gap-2 shadow-2xs transition';
+            if (dot) {
+                dot.className = 'status-indicator-dot w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse';
+            }
+            if (text) text.textContent = 'ออนไลน์';
+            btn.title = 'สถานะ: ออนไลน์ (คลิกเพื่อดูการซิงค์ข้อมูล Google Sheets)';
+        } else {
+            btn.className = 'soft-btn bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-300 px-3.5 py-2.5 font-bold text-xs flex items-center gap-2 shadow-2xs transition';
+            if (dot) {
+                dot.className = 'status-indicator-dot w-2.5 h-2.5 rounded-full bg-slate-400';
+            }
+            if (text) text.textContent = 'ออฟไลน์';
+            btn.title = 'สถานะ: ออฟไลน์ (บันทึกข้อมูลในเครื่องอัตโนมัติ)';
+        }
+    });
+
+    const modalBadge = document.getElementById('online-status-modal-badge');
+    if (modalBadge) {
+        if (isOnline) {
+            modalBadge.innerText = '🟢 ออนไลน์';
+            modalBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800';
+        } else {
+            modalBadge.innerText = '⚪ ออฟไลน์';
+            modalBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600';
+        }
+    }
+}
+
+window.addEventListener('online', () => {
+    updateOnlineStatusUI();
+});
+
+window.addEventListener('offline', () => {
+    updateOnlineStatusUI();
+});
+
 function updateSheetsSyncStatusUI() {
+    updateOnlineStatusUI();
     const savedUrl = localStorage.getItem('smart_gardens_sheets_url') || '';
     const badge = document.getElementById('sheets-connection-badge');
     if (badge) {
@@ -1637,6 +1686,11 @@ function showSheetsSyncMessage(text, type = 'info') {
 }
 
 async function syncUploadToSheets() {
+    if (!navigator.onLine) {
+        showSheetsSyncMessage('⚠️ ขณะนี้อยู่ในโหมดออฟไลน์ กรุณาเชื่อมต่ออินเทอร์เน็ตก่อนซิงค์ข้อมูล', 'error');
+        return;
+    }
+
     const url = localStorage.getItem('smart_gardens_sheets_url') || (document.getElementById('sheets-webapp-url-input')?.value.trim());
     if (!url) {
         alert('กรุณากรอกและบันทึก Web App URL จาก Google Apps Script ก่อนเริ่มซิงค์ข้อมูล');
@@ -1684,6 +1738,11 @@ async function syncUploadToSheets() {
 }
 
 async function syncDownloadFromSheets() {
+    if (!navigator.onLine) {
+        showSheetsSyncMessage('⚠️ ขณะนี้อยู่ในโหมดออฟไลน์ กรุณาเชื่อมต่ออินเทอร์เน็ตก่อนซิงค์ข้อมูล', 'error');
+        return;
+    }
+
     const url = localStorage.getItem('smart_gardens_sheets_url') || (document.getElementById('sheets-webapp-url-input')?.value.trim());
     if (!url) {
         alert('กรุณากรอกและบันทึก Web App URL จาก Google Apps Script ก่อนเริ่มซิงค์ข้อมูล');

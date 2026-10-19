@@ -49,8 +49,9 @@
                 </div>
 
                 <div class="flex items-center gap-2 md:hidden">
-                    <button onclick="playClickSound(); openSheetsSyncModal()" class="soft-btn bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 px-2.5 py-2 font-bold text-xs flex items-center gap-1 shadow-2xs" title="ซิงค์ Google Sheets">
-                        <i class="fa-solid fa-file-excel text-emerald-600"></i>
+                    <button id="connection-status-btn-mobile" onclick="playClickSound(); openSheetsSyncModal()" class="soft-btn bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 px-2.5 py-2 font-bold text-xs flex items-center gap-1.5 shadow-2xs transition" title="สถานะการเชื่อมต่อ (คลิกเพื่อดูการซิงค์ข้อมูล)">
+                        <span class="status-indicator-dot w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span class="status-indicator-text">ออนไลน์</span>
                     </button>
                     <button onclick="playClickSound(); openAddGardenModal()" class="soft-btn bg-[#0F4C81] hover:bg-[#022C50] text-white px-3.5 py-2 font-bold text-xs flex items-center gap-1.5 shadow-md shadow-blue-200">
                         <i class="fa-solid fa-plus text-xs"></i> เพิ่มสวน
@@ -65,8 +66,9 @@
             </div>
 
             <div class="hidden md:flex items-center gap-2 shrink-0">
-                <button onclick="playClickSound(); openSheetsSyncModal()" class="soft-btn bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 px-3.5 py-2.5 font-bold text-xs flex items-center gap-2 shadow-2xs transition" title="เชื่อมต่อและซิงค์ข้อมูลกับ Google Sheets">
-                    <i class="fa-solid fa-file-excel text-emerald-600 text-sm"></i> <span>ซิงค์ Google Sheets</span>
+                <button id="connection-status-btn" onclick="playClickSound(); openSheetsSyncModal()" class="soft-btn bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 px-3.5 py-2.5 font-bold text-xs flex items-center gap-2 shadow-2xs transition" title="สถานะการเชื่อมต่อ (คลิกเพื่อดูการซิงค์ข้อมูล)">
+                    <span class="status-indicator-dot w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="status-indicator-text">ออนไลน์</span>
                 </button>
                 <button onclick="playClickSound(); openAddGardenModal()" class="soft-btn bg-[#0F4C81] hover:bg-[#022C50] text-white px-4 py-2.5 font-bold text-xs flex items-center gap-2 shadow-md shadow-blue-200">
                     <i class="fa-solid fa-plus text-xs"></i> เพิ่มสวนใหม่ ✨
@@ -557,8 +559,9 @@
                         <i class="fa-solid fa-file-excel text-emerald-600"></i>
                     </div>
                     <div>
-                        <h3 class="text-base md:text-lg font-bold text-[#06172E] flex items-center gap-2">
+                        <h3 class="text-base md:text-lg font-bold text-[#06172E] flex items-center gap-1.5 flex-wrap">
                             <span>ซิงค์ข้อมูล Google Sheets</span>
+                            <span id="online-status-modal-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">🟢 ออนไลน์</span>
                             <span id="sheets-connection-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">ยังไม่เชื่อมต่อ</span>
                         </h3>
                         <p class="text-xs text-[#58A1D3]">สำรองข้อมูลและดูตารางสวนบน Google Sheets ผ่าน Apps Script</p>
